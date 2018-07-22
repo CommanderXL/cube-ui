@@ -6,9 +6,6 @@ var webpack = require('webpack')
 var merge = require('webpack-merge')
 var baseWebpackConfig = require('./webpack.base.conf')
 var ExtractTextPlugin = require('extract-text-webpack-plugin')
-var env = process.env.NODE_ENV === 'testing'
-  ? require('../config/test.env')
-  : config.build.env
 
 var modules = {}
 var cPath = path.join(__dirname, '../src/modules')
@@ -25,7 +22,12 @@ if (files) {
 var webpackConfig = merge(baseWebpackConfig, {
   entry: modules,
   module: {
-    rules: utils.styleLoaders({ sourceMap: config.build.productionSourceMap, extract: true })
+    rules: utils.styleLoaders({
+      sourceMap: config.build.productionSourceMap,
+      extract: {
+        publicPath: '../'
+      }
+    })
   },
   devtool: config.build.productionSourceMap ? '#source-map' : false,
   output: {
@@ -35,10 +37,6 @@ var webpackConfig = merge(baseWebpackConfig, {
     libraryTarget: 'commonjs2'
   },
   plugins: [
-    // http://vuejs.github.io/vue-loader/workflow/production.html
-    new webpack.DefinePlugin({
-      'process.env': env
-    }),
     // extract css into its own file
     new ExtractTextPlugin(utils.assetsPath('[name]/style.css'))
   ]

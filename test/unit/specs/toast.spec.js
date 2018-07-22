@@ -89,9 +89,13 @@ describe('Toast', () => {
               txt: 'error txt',
               time: 200
             })
-            ins = this.$toast.warn({
+            ins = this.$createToast({
+              type: 'warn',
               txt: 'toast api content',
-              time: 100
+              time: 100,
+              $class: {
+                'my-toast': true
+              }
             })
             ins.show()
           }
@@ -103,6 +107,8 @@ describe('Toast', () => {
       expect(ins.$el.parentElement)
         .to.equal(document.body)
       setTimeout(() => {
+        expect(ins.$el.className)
+          .to.include('my-toast')
         expect(ins.$el.querySelector('.cube-toast-tip').textContent)
         .to.equal('toast api content')
         ins.remove()
@@ -112,5 +118,29 @@ describe('Toast', () => {
         done()
       })
     })
+
+    it('should trigger correct event', function (done) {
+      const timeoutHandle = sinon.spy()
+
+      const vm = createToast({
+        time: 1000
+      }, {
+        timeout: timeoutHandle
+      })
+
+      vm.show()
+
+      setTimeout(() => {
+        expect(timeoutHandle).to.be.calledOnce
+        done()
+      }, 1200)
+    })
+
+    function createToast(props = {}, events = {}) {
+      return instantiateComponent(Vue, Toast, {
+        props: props,
+        on: events
+      })
+    }
   })
 })

@@ -2,6 +2,8 @@
 
 `Dialog` modal component，provides various styles and interactions.
 
+__Notice:__ Cause this component used create-api, so you should read [create-api](#/en-US/docs/create-api) first.
+
 ### Example
 
 - Dialog type
@@ -43,11 +45,13 @@
           confirmBtn: {
             text: 'confirm',
             active: true,
+            disabled: false,
             href: 'javascript:;'
           },
           cancelBtn: {
             text: 'cancel',
             active: false,
+            disabled: false,
             href: 'javascript:;'
           },
           onConfirm: () => {
@@ -70,7 +74,7 @@
   }
   ```
 
-  Button configuration(`confirmBtn`, `cancelBtn`) can be `String` or `Object` type. When given an Object, `text` can be used to set button content，`active` is used to set button highlight state，`href` is used to set the link that will be jumped to when the button is clicked.
+  Button configuration(`confirmBtn`, `cancelBtn`) can be `String` or `Object` type. When given an Object, `text` can be used to set button content，`active` is used to set button highlight state，`disabled` is used to set button disabled state，`href` is used to set the link that will be jumped to when the button is clicked.
 
 - Show close button
 
@@ -151,12 +155,14 @@
 | Attribute | Description | Type | Accepted Values | Default |
 | - | - | - | - | - |
 | type | dialog type | String | alert / confirm | alert |
-| icon | icon class name | String | [refer to built-in icons in style module](#/style) | '' |
+| icon | icon class name | String | [refer to built-in icons in style module](#/en-US/docs/style) | '' |
 | title | title | String | - | '' |
 | content | content | String | - | '' |
 | showClose | whether to show close button | Boolean | true/false | false |
 | confirmBtn | confirm button configuration | Object/String | - | { text: '确定', active: true, href: 'javascript:;' } |
 | cancelBtn | cancel button configuration | Object/String | - | { text: '取消', active: false, href: 'javascript:;' } |
+| visible<sup>1.8.1</sup> | whether visible. Bind to `v-model` | Boolean | true/false | false |
+| maskClosable<sup>1.9.6</sup> | whether hide the component when clicked the mask layer | Boolean | true/false | false |
 
 * `confirmBtn` sub configuration
 
@@ -164,6 +170,7 @@
 | - | - | - | - | - |
 | text | button text | String | - | '确认' |
 | active | whether to highlight | Boolean | true/false | true |
+| disabled | whether to disabled button | Boolean | true/false | false |
 | href | the link that will be jumped to when the button is clicked | String | - | 'javascript:;' |
 
 * `cancelBtn` sub configuration
@@ -172,6 +179,7 @@
 | - | - | - | - | - |
 | text | button text | String | - | '取消' |
 | active | whether highlight | Boolean | true/false | false |
+| disabled | whether to disabled button | Boolean | true/false | false |
 | href | the link that will be jumped to when the button is clicked | String | - | 'javascript:;' |
 
 ### Slot
@@ -188,3 +196,10 @@
 | confirm | triggers when the confirm button is clicked | e - event target |
 | cancel | triggers when the cancel button is clicked | e - event target |
 | close | triggers when the close button is clicked | e - event target |
+
+### Instance methods
+
+| Method name | Description |
+| - | - |
+| show | show |
+| hide | hide |

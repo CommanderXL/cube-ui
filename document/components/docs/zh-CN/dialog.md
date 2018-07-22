@@ -2,6 +2,8 @@
 
 `Dialog`模态框组件，提供了多种样式及交互形式。
 
+__注：__ 由于此组件基于 create-api 实现，所以在使用之前，请确保自己了解过 [create-api](#/zh-CN/docs/create-api)。
+
 ### 示例
 
 - 类型设置
@@ -43,11 +45,13 @@
           confirmBtn: {
             text: '确定按钮',
             active: true,
+            disabled: false,
             href: 'javascript:;'
           },
           cancelBtn: {
             text: '取消按钮',
             active: false,
+            disabled: false,
             href: 'javascript:;'
           },
           onConfirm: () => {
@@ -70,7 +74,7 @@
   }
   ```
 
-  按钮设置可接受 `String` 或 `Object` 类型数据，当传入 `Object` 类型的数据时，可通过 `text` 字段来设置按钮文案内容、`active` 字段来设置按钮文案是否高亮、`href` 字段为按钮的跳转链接。
+  按钮设置可接受 `String` 或 `Object` 类型数据，当传入 `Object` 类型的数据时，可通过 `text` 字段来设置按钮文案内容、`active` 字段来设置按钮文案是否高亮、`disabled` 字段来设置按钮是否禁用、`href` 字段为按钮的跳转链接。
 
 - 关闭按钮
 
@@ -151,12 +155,14 @@
 | 参数 | 说明 | 类型 | 可选值 | 默认值 |
 | - | - | - | - | - |
 | type | 类型 | String | 提示框 alert / 确认框 confirm | alert |
-| icon | 图标的 class 名 | String | [参照 style 模块下的内置 icon 部分](#/style) | '' |
+| icon | 图标的 class 名 | String | [参照 style 模块下的内置 icon 部分](#/zh-CN/docs/style) | '' |
 | title | 标题 | String | - | '' |
 | content | 正文 | String | - | '' |
 | showClose | 是否显示关闭按钮 | Boolean | true/false | false |
 | confirmBtn | 确认按钮参数配置 | Object/String | - | { text: '确定', active: true, href: 'javascript:;' } |
 | cancelBtn | 取消按钮参数配置 | Object/String | - | { text: '取消', active: false, href: 'javascript:;' } |
+| visible<sup>1.8.1</sup> | 显示状态，是否可见。`v-model`绑定值 | Boolean | true/false | false |
+| maskClosable<sup>1.9.6</sup> | 点击蒙层是否隐藏 | Boolean | true/false | false |
 
 * `confirmBtn` 子配置项
 
@@ -164,6 +170,7 @@
 | - | - | - | - | - |
 | text | 按钮文案 | String | - | '确认' |
 | active | 是否高亮 | Boolean | true/false | true |
+| disabled | 是否禁用 | Boolean | true/false | false |
 | href | 点击按钮后的跳转链接 | String | - | 'javascript:;' |
 
 * `cancelBtn` 子配置项
@@ -172,6 +179,7 @@
 | - | - | - | - | - |
 | text | 按钮文案 | String | - | '取消' |
 | active | 是否高亮 | Boolean | true/false | false |
+| disabled | 是否禁用 | Boolean | true/false | false |
 | href | 点击按钮后的跳转链接 | String | - | 'javascript:;' |
 
 ### 插槽
@@ -188,3 +196,10 @@
 | confirm | 点击确认按钮后触发 | 事件对象 e |
 | cancel | 点击取消按钮后触发 | 事件对象 e |
 | close | 点击关闭按钮后触发 | 事件对象 e |
+
+### 实例方法
+
+| 方法名 | 说明 |
+| - | - |
+| show | 显示 |
+| hide | 隐藏 |

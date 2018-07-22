@@ -2,6 +2,8 @@
 
 `Toast` component.You can use it to show non-modal tip message without user interaction.
 
+__Notice:__ Cause this component used create-api, so you should read [create-api](#/en-US/docs/create-api) first.
+
 ### Example
 
 - Duration of display
@@ -77,11 +79,70 @@
   ```
   Set `type` to change the tip icon.You can see accepted types in the following `Props configuration`.
 
+- Callback
+
+  ```html
+  <cube-button @click="showToastCallback">Toast - callback</cube-button>
+  ```
+
+  ```js
+  export default {
+    methods: {
+      showToastCallbak() {
+        const toast = this.$createToast({
+          txt: 'Timeout',
+          time: 1000,
+          onTimeout: () => {
+            console.log('Timeout')
+          }
+        })
+        toast.show()
+      }
+    }
+  }
+  ```
+
+  Besides set `onTimeout`.You can pass the callback through `$events` too.
+
+  ```js
+  export default {
+    methods: {
+      showToastCallbak() {
+        const toast = this.$createToast({
+          txt: 'Timeout',
+          time: 1000,
+          $events: {
+            timeout: () => {
+              console.log('Timeout')
+            }
+          }
+        })
+        toast.show()
+      }
+    }
+  }
+  ```
+
 ### Props configuration
 
 | Attribute | Description | Type | Accepted Values | Default |
 | - | - | - | - | - |
 | type | toast type(different types of icons) | String | loading/correct/error/warn | loading |
 | mask | whether to show mask layer | Boolean | true/false | false |
-| txt | tip text | String | - | '' |
+| txt | tip text | String  | - | '' |
 | time | display duration, millisecond | Number | - | 3000 |
+| visible<sup>1.8.1</sup> | whether visible. Bind to `v-model` | Boolean | true/false | false |
+| maskClosable<sup>1.9.6</sup> | whether hide the component when clicked the mask layer | Boolean | true/false | false |
+
+### Events
+
+| Event Name | Description |
+| - | - |
+| timeout | triggers when the display time is out |
+
+### Instance methods
+
+| Method name | Description |
+| - | - |
+| show | show |
+| hide | hide |

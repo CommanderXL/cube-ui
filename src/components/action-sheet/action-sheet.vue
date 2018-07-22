@@ -5,11 +5,12 @@
       :class="{'cube-action-sheet_picker': pickerStyle}"
       :center="false"
       :mask="true"
+      :z-index="zIndex"
       v-show="isVisible"
-      @touchmove.prevent="noop"
-      @click="cancel">
+      @touchmove.prevent
+      @mask-click="maskClick">
       <transition name="cube-action-sheet-move">
-        <div class="cube-action-sheet-panel" v-show="isVisible" @click.stop="noop">
+        <div class="cube-action-sheet-panel cube-safe-area-pb" v-show="isVisible" @click.stop>
           <h1 class="cube-action-sheet-title border-bottom-1px" v-show="pickerStyle || title">{{title}}</h1>
           <div class="cube-action-sheet-content">
             <ul class="cube-action-sheet-list">
@@ -26,7 +27,7 @@
             </ul>
           </div>
           <div class="cube-action-sheet-space"></div>
-          <div class="cube-action-sheet-cancel" @click="cancel"><span>取消</span></div>
+          <div class="cube-action-sheet-cancel" @click="cancel"><span>{{cancelTxt}}</span></div>
         </div>
       </transition>
     </cube-popup>
@@ -35,7 +36,8 @@
 
 <script type="text/ecmascript-6">
   import CubePopup from '../popup/popup.vue'
-  import apiMixin from '../../common/mixins/api'
+  import visibilityMixin from '../../common/mixins/visibility'
+  import popupMixin from '../../common/mixins/popup'
 
   const COMPONENT_NAME = 'cube-action-sheet'
   const EVENT_SELECT = 'select'
@@ -43,7 +45,7 @@
 
   export default {
     name: COMPONENT_NAME,
-    mixins: [apiMixin],
+    mixins: [visibilityMixin, popupMixin],
     props: {
       data: {
         type: Array,
@@ -57,15 +59,24 @@
       },
       title: {
         type: String,
-        default: ' '
+        default: ''
       },
       pickerStyle: {
         type: Boolean,
         default: false
+      },
+      maskClosable: {
+        type: Boolean,
+        default: true
+      },
+      cancelTxt: {
+        type: String,
+        default: '取消'
       }
     },
     methods: {
-      noop() {
+      maskClick() {
+        this.maskClosable && this.cancel()
       },
       cancel() {
         this.hide()
@@ -83,7 +94,6 @@
 </script>
 
 <style lang="stylus" rel="stylesheet/stylus">
-  @require "../../common/stylus/base.styl"
   @require "../../common/stylus/mixin.styl"
   @require "../../common/stylus/variable.styl"
 
@@ -95,6 +105,7 @@
   .cube-action-sheet-panel
     text-align: center
     font-size: $fontsize-medium
+    background-color: $action-sheet-bgc
   .cube-action-sheet-move-enter, .cube-action-sheet-move-leave-active
     transform: translate3d(0, 100%, 0)
   .cube-action-sheet-move-enter-active, .cube-action-sheet-move-leave-active
@@ -137,12 +148,13 @@
     &:last-of-type
       border-none()
     &[data-align="left"]
-      text-align left
+      text-align: left
     &[data-align="right"]
-      text-align right
+      text-align: right
 
   .cube-action-sheet-space
     height: 6px
+    background-color: $action-sheet-space-bgc
 
   .cube-action-sheet-item_active
     color: $action-sheet-active-color

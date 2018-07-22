@@ -2,6 +2,8 @@
 
 `ActionSheet` provides two common styles and it is flexible.
 
+__Notice:__ Cause this component used create-api, so you should read [create-api](#/en-US/docs/create-api) first.
+
 ### Example
 
 - Basic usage
@@ -17,7 +19,7 @@
           title: '我是标题~~~',
           data: [
             {
-              content: '<em>default</em>',
+              content: '<em>align - center</em>',
               class: 'cube-foo'
             },
             {
@@ -138,9 +140,12 @@
 | Attribute | Description | Type | Accepted Values | Default |
 | - | - | - | - | - |
 | title | actionsheet's title | String | - | '' |
+| cancelTxt<sup>1.9.9</sup> | the text of the cancel button | String | - | '取消' |
 | data | the data list to display | Array | - | [] |
 | active | the highlighted item's index | Number | - | -1 |
 | pickerStyle | Picker style | Boolean | true/false | false |
+| visible<sup>1.8.1</sup> | whether visible. Bind to `v-model` | Boolean | true/false | false |
+| maskClosable<sup>1.9.6</sup> | whether hide the component when clicked the mask layer | Boolean | true/false | true |
 
 * `data` sub configuration
 
@@ -156,3 +161,10 @@
 | - | - | - | - |
 | cancel | triggers when clicking the cancel button | - | - |
 | select | triggers when clicking some item | the clicked item - data[index] | the index of the clicked item |
+
+### Instance methods
+
+| Method name | Description |
+| - | - |
+| show | show |
+| hide | hide |

@@ -46,8 +46,8 @@
   @import "~@/common/stylus/variable.styl"
 
   .cube-page
-    position: fixed
-    z-index: 20
+    position: absolute
+    z-index: 10
     top: 0
     left: 0
     width: 100%
@@ -58,11 +58,11 @@
       height: 44px
       line-height: 44px
       text-align: center
-      background-color: #f7f7f7
+      background-color: #edf0f4
       box-shadow: 0 1px 6px #ccc
       -webkit-backface-visibility: hidden
       backface-visibility: hidden
-      z-index: 99
+      z-index: 5
       h1
         font-size: 16px
         font-weight: 700
@@ -72,8 +72,7 @@
         left: 0
         padding: 0 15px
         color: #fc9153
-    .wrapper
-      width: 100%
+    >.wrapper
       height: calc(100% - 44px)
       overflow: auto
       -webkit-overflow-scrolling: touch

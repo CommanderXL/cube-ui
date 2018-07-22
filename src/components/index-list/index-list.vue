@@ -1,40 +1,57 @@
 <template>
   <div class="cube-index-list">
     <cube-scroll
-      ref="indexList"
-      :listen-scroll="listenScroll"
-      :probe-type="probeType"
+      ref="scroll"
+      :scroll-events="scrollEvents"
+      :options="scrollOptions"
       :data="data"
-      :click="true"
-      @scroll="scroll">
+      @scroll="scroll"
+      @pulling-down="onPullingDown"
+      @pulling-up="onPullingUp">
       <div class="cube-index-list-content" ref="content">
         <h1 class="cube-index-list-title" v-if="title" ref="title" @click="titleClick">
-          {{title}}
+          {{ title }}
         </h1>
-        <ul ref="groups">
-          <li v-for="group in data" ref="listGroup">
-            <h2 class="cube-index-list-anchor">{{group.name}}</h2>
-            <ul>
-              <li
-                class="cube-index-list-item border-bottom-1px"
-                v-for="item in group.items"
-                @touchstart="addActiveCls"
-                @touchend="removeActiveCls"
-                @click="selectItem(item)">
-                {{item.name}}
-              </li>
-            </ul>
-          </li>
+        <ul>
+          <slot>
+            <cube-index-list-group v-for="(group, index) in data" :key="index" :group="group" @select="selectItem">
+            </cube-index-list-group>
+          </slot>
         </ul>
       </div>
+      <template v-if="$slots.pullup || $scopedSlots.pullup" slot="pullup" slot-scope="props">
+        <slot name="pullup"
+          :pullUpLoad="props.pullUpLoad"
+          :isPullUpLoad="props.isPullUpLoad">
+        </slot>
+      </template>
+      <template v-if="$slots.pulldown || $scopedSlots.pulldown" slot="pulldown" slot-scope="props">
+        <slot name="pulldown"
+          :pullDownRefresh="props.pullDownRefresh"
+          :pullDownStyle="props.pullDownStyle"
+          :beforePullDown="props.beforePullDown"
+          :isPullingDown="props.isPullingDown"
+          :bubbleY="props.bubbleY">
+        </slot>
+      </template>
     </cube-scroll>
-    <div class="cube-index-list-nav" @touchstart="onShortcutTouchStart" @touchmove.stop.prevent="onShortcutTouchMove">
-      <ul>
-        <li v-for="(item, index) in shortcutList" :data-index="index" :class="{active: currentIndex === index}">{{item}}</li>
+    <div v-if="navbar" class="cube-index-list-nav" @touchstart="onShortcutTouchStart" @touchmove.stop.prevent="onShortcutTouchMove">
+      <ul class="cube-index-list-nav-list">
+        <li
+          v-for="(item, index) in shortcutList"
+          :key="index"
+          :data-index="index"
+          class="cube-index-list-nav-item"
+          :class="{active: currentIndex === index}"
+        >
+          <slot name="nav-item" :item="item">{{ item }}</slot>
+        </li>
       </ul>
     </div>
-    <div class="cube-index-list-fixed" ref="fixed" v-show="fixedTitle">
-      {{fixedTitle}}
+    <div ref="fixed"
+      v-show="fixedTitle"
+      v-html="fixedTitle"
+      class="cube-index-list-fixed cube-index-list-anchor">
     </div>
   </div>
 </template>
@@ -42,23 +59,29 @@
 <script type="text/ecmascript-6">
   import {
     getData,
-    addClass,
-    removeClass
+    getRect,
+    prefixStyle,
+    getMatchedTarget
   } from '../../common/helpers/dom'
+  import { inBrowser } from '../../common/helpers/env'
 
   import CubeScroll from '../scroll/scroll.vue'
+  import CubeIndexListGroup from './index-list-group.vue'
+  import scrollMixin from '../../common/mixins/scroll'
+  import deprecatedMixin from '../../common/mixins/deprecated'
 
   const COMPONENT_NAME = 'cube-index-list'
   const EVENT_SELECT = 'select'
   const EVENT_TITLE_CLICK = 'title-click'
-  const ACTIVE_CLS = 'cube-index-list-item_active'
+  const EVENT_PULLING_UP = 'pulling-up'
+  const EVENT_PULLING_DOWN = 'pulling-down'
 
-  const TITLE_HEIGHT = 50
-  const SUBTITLE_HEIGHT = 40
-  const ANCHOR_HEIGHT = window.innerHeight <= 480 ? 17 : 18
+  const ANCHOR_HEIGHT = inBrowser ? window.innerHeight <= 480 ? 17 : 18 : 18
+  const transformStyleKey = prefixStyle('transform')
 
   export default {
     name: COMPONENT_NAME,
+    mixins: [scrollMixin, deprecatedMixin],
     props: {
       title: {
         type: String,
@@ -66,43 +89,76 @@
       },
       data: {
         type: Array,
-        default: []
+        default() {
+          return []
+        }
+      },
+      speed: {
+        type: Number,
+        default: 0
+      },
+      navbar: {
+        type: Boolean,
+        default: true
+      },
+      pullDownRefresh: {
+        type: [Object, Boolean],
+        default: undefined,
+        deprecated: {
+          replacedBy: 'options'
+        }
+      },
+      pullUpLoad: {
+        type: [Object, Boolean],
+        default: undefined,
+        deprecated: {
+          replacedBy: 'options'
+        }
       }
     },
     data() {
       return {
+        scrollEvents: ['scroll'],
         currentIndex: 0,
         scrollY: -1,
-        diff: -1
+        diff: -1,
+        titleHeight: 0
       }
-    },
-    created() {
-      this.probeType = 3
-      this.listenScroll = true
-      this.listHeight = []
-      this.touch = {}
-    },
-    mounted() {
-      setTimeout(() => {
-        this._calculateHeight()
-      }, 20)
     },
     computed: {
       fixedTitle() {
-        if (this.scrollY > -TITLE_HEIGHT) {
-          return ''
-        }
-        return this.data[this.currentIndex] ? this.data[this.currentIndex].name : ''
+        this.title && !this.titleHeight && this._caculateTitleHeight()
+
+        return this.scrollY <= -this.titleHeight && this.data[this.currentIndex] ? this.data[this.currentIndex].name : ''
       },
       shortcutList() {
         return this.data.map((group) => {
-          return group.name.substr(0, 1)
+          return group ? group.shortcut || group.name.substr(0, 1) : ''
         })
+      },
+      scrollOptions() {
+        return Object.assign({}, {
+          pullDownRefresh: this.pullDownRefresh,
+          pullUpLoad: this.pullUpLoad
+        }, this.options)
       }
     },
+    created() {
+      this.groupList = []
+      this.listHeight = []
+      this.touch = {}
+      this.subTitleHeight = 0
+    },
+    mounted() {
+      this.$nextTick(() => {
+        this.title && this._caculateTitleHeight()
+        this._calculateHeight()
+      })
+    },
     methods: {
+      /* TODO: remove refresh next minor version */
       refresh() {
-        this.$refs.indexList.refresh()
+        this.$refs.scroll.refresh()
       },
       selectItem(item) {
         this.$emit(EVENT_SELECT, item)
@@ -113,8 +169,13 @@
       titleClick() {
         this.$emit(EVENT_TITLE_CLICK, this.title)
       },
+      forceUpdate() {
+        this.$refs.scroll.forceUpdate()
+      },
       onShortcutTouchStart(e) {
-        let anchorIndex = getData(e.target, 'index')
+        const target = getMatchedTarget(e, 'cube-index-list-nav-item')
+        if (!target) return
+        let anchorIndex = getData(target, 'index')
         let firstTouch = e.touches[0]
         this.touch.y1 = firstTouch.pageY
         this.touch.anchorIndex = anchorIndex
@@ -129,22 +190,29 @@
 
         this._scrollTo(anchorIndex)
       },
-      addActiveCls(e) {
-        addClass(e.currentTarget, ACTIVE_CLS)
+      onPullingUp() {
+        this.$emit(EVENT_PULLING_UP)
       },
-      removeActiveCls(e) {
-        removeClass(e.currentTarget, ACTIVE_CLS)
+      onPullingDown() {
+        this.$emit(EVENT_PULLING_DOWN)
+      },
+      _caculateTitleHeight() {
+        this.titleHeight = this.$refs.title ? getRect(this.$refs.title).height : 0
       },
       _calculateHeight() {
-        const list = this.$refs.listGroup
-        if (!list) {
+        this.groupList = this.$el.getElementsByClassName('cube-index-list-group')
+        const subTitleEl = this.$el.getElementsByClassName('cube-index-list-anchor')[0]
+        this.subTitleHeight = subTitleEl ? getRect(subTitleEl).height : 0
+        this.listHeight = []
+
+        if (!this.groupList) {
           return
         }
-        this.listHeight = []
-        let height = TITLE_HEIGHT
+
+        let height = this.titleHeight
         this.listHeight.push(height)
-        for (let i = 0; i < list.length; i++) {
-          let item = list[i]
+        for (let i = 0; i < this.groupList.length; i++) {
+          let item = this.groupList[i]
           height += item.clientHeight
           this.listHeight.push(height)
         }
@@ -155,28 +223,34 @@
         } else if (index > this.listHeight.length - 2) {
           index = this.listHeight.length - 2
         }
-        this.$refs.indexList.scrollToElement(this.$refs.listGroup[index], 0)
-        this.scrollY = this.$refs.indexList.scroll.y
+        this.$refs.scroll.scrollToElement(this.groupList[index], this.speed)
+        this.scrollY = this.$refs.scroll.scroll.y
       }
     },
     watch: {
       data() {
-        setTimeout(() => {
+        this.$nextTick(() => {
           this._calculateHeight()
-        }, 20)
+        })
+      },
+      title(newVal) {
+        this.$nextTick(() => {
+          this._caculateTitleHeight()
+          this._calculateHeight()
+        })
       },
       diff(newVal) {
-        let fixedTop = (newVal > 0 && newVal < SUBTITLE_HEIGHT) ? newVal - SUBTITLE_HEIGHT : 0
+        let fixedTop = (newVal > 0 && newVal < this.subTitleHeight) ? newVal - this.subTitleHeight : 0
         if (this.fixedTop === fixedTop) {
           return
         }
         this.fixedTop = fixedTop
-        this.$refs.fixed.style.transform = `translate3d(0,${fixedTop}px,0)`
+        this.$refs.fixed.style[transformStyleKey] = `translate3d(0,${fixedTop}px,0)`
       },
       scrollY(newY) {
         const listHeight = this.listHeight
         // top
-        if (newY > -TITLE_HEIGHT) {
+        if (newY > -this.titleHeight) {
           this.currentIndex = 0
           return
         }
@@ -195,7 +269,8 @@
       }
     },
     components: {
-      CubeScroll
+      CubeScroll,
+      CubeIndexListGroup
     }
   }
 </script>
@@ -203,12 +278,11 @@
 <style lang="stylus" rel="stylesheet/stylus">
   @require "../../common/stylus/variable.styl"
   @require "../../common/stylus/mixin.styl"
-  @require "../../common/stylus/base.styl"
 
   .cube-index-list
     position: relative
-    width: 100%
     height: 100%
+    overflow: hidden
     .cube-scroll-wrapper
       position: absolute
       left: 0
@@ -218,37 +292,24 @@
       overflow: hidden
   .cube-index-list-content
     background: $index-list-bgc
-    box-shadow: $index-list-box-shadow
     border-radius: 2px
   .cube-index-list-title
     padding: 14px 16px
     font-size: $fontsize-medium
     line-height: 1.6
     color: $index-list-title-color
-  .cube-index-list-anchor, .cube-index-list-fixed
+  .cube-index-list-anchor
     padding: 16px 16px 10px 16px
     line-height: 1
     font-size: $fontsize-medium
     color: $index-list-anchor-color
     background: $index-list-anchor-bgc
-  .cube-index-list-item
-    position: relative
-    height: 50px
-    line-height: 50px
-    padding: 0 16px
-    font-size: $fontsize-medium
-    color: $index-list-item-color
-    &:last-child
-      border-none()
-  .cube-index-list-item_active
-    background: $index-list-item-active-bgc
   .cube-index-list-fixed
     z-index: 1
     position: absolute
     top: 0
     left: 0
-    width: 100%
-    box-sizing: border-box
+    right: 0
   .cube-index-list-nav
     position: absolute
     z-index: 30

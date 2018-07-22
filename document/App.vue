@@ -8,33 +8,49 @@
 export default {
   data () {
     return {
-      oldHash: window.location.hash
+      oldPath: window.location.hash
     }
   },
   mounted () {
     const docViewEle = document.body
-    const pattern = /#cube-(.*)-anchor/
     docViewEle.addEventListener('click', (e) => {
-      e.preventDefault()
       let target = e.target
       while (target && target.className !== 'anchor') {
         target = target.parentNode
       }
       if (target) {
-        const href = target.getAttribute('href')
-        let newHash = ''
-        if (pattern.test(this.oldHash)) {
-          newHash = this.oldHash.replace(pattern, href)
-        } else {
-          newHash = this.oldHash + href
-        }
-        window.location.hash = newHash
+        e.preventDefault()
+        this.scrollToHash(target.getAttribute('href'))
       }
     })
   },
   watch: {
     $route (to, from) {
-      this.oldHash = `#${to.path}`
+      this.oldPath = `#${to.path}`
+      this.scrollToHash(to.hash)
+    }
+  },
+  methods: {
+    scrollToHash (hash) {
+      const pattern = /#cube-(.*)-anchor/
+      let newUrl = ''
+      let matcher
+      if (!hash) {
+        matcher = window.location.hash.match(pattern)
+        if (matcher) {
+          hash = matcher[0]
+        }
+      }
+      if (hash) {
+        matcher = hash.match(pattern)
+        newUrl = this.oldPath + hash
+        window.location.hash = newUrl
+        setTimeout(() => {
+          const anchor = decodeURIComponent(matcher[1])
+          const el = document.querySelector(`#${anchor}`)
+          el && el.scrollIntoView()
+        })
+      }
     }
   }
 }
@@ -45,4 +61,7 @@ export default {
   #app
     width: 100%
     height: 100%
+    background-color: white
+  .ov-hidden
+    overflow: hidden
 </style>

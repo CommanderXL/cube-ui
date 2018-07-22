@@ -20,7 +20,10 @@
       showToastTime() {
         this.toast = this.$createToast({
           time: 1000,
-          txt: 'Toast time 1s'
+          txt: 'Toast time 1s',
+          onTimeout: () => {
+            console.log('timeout')
+          }
         })
         this.toast.show()
       },
@@ -48,9 +51,6 @@
         })
         this.toast.show()
       }
-    },
-    beforeDestroy() {
-      this.toast && this.toast.remove() && (this.toast = null)
     },
     components: {
       CubeButtonGroup,

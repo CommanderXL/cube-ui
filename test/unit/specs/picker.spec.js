@@ -37,12 +37,6 @@ const data2 = [
     value: 'e'
   }
 ]
-const props = {
-  title: '两列选择器',
-  data: [data1, data2],
-  cancelTxt: '关闭',
-  confirmTxt: '好的'
-}
 
 describe('Picker', () => {
   let vm
@@ -58,16 +52,31 @@ describe('Picker', () => {
     Vue.use(Picker)
     expect(Vue.component(Picker.name))
       .to.be.a('function')
+    expect(Vue.prototype.$createPicker).to.be.a('function')
   })
 
   it('should render correct contents', function () {
-    vm = createPicker(props)
+    vm = createPicker({
+      title: 'title',
+      subtitle: 'subtitle',
+      data: [data1, data2],
+      cancelTxt: '关闭',
+      confirmTxt: '好的'
+    })
 
-    const cancelBtn = vm.$el.querySelector('.cube-picker-choose [data-action="cancel"]')
+    const titleEl = vm.$el.querySelector('.cube-picker-title')
+    expect(titleEl.textContent.trim())
+      .to.equal('title')
+
+    const subtitleEl = vm.$el.querySelector('.cube-picker-subtitle')
+    expect(subtitleEl.textContent.trim())
+      .to.equal('subtitle')
+
+    const cancelBtn = vm.$el.querySelector('.cube-picker-cancel')
     expect(cancelBtn.textContent.trim())
       .to.equal('关闭')
 
-    const confirmBtn = vm.$el.querySelector('.cube-picker-choose [data-action="confirm"]')
+    const confirmBtn = vm.$el.querySelector('.cube-picker-confirm')
     expect(confirmBtn.textContent.trim())
       .to.equal('好的')
 
@@ -88,6 +97,53 @@ describe('Picker', () => {
       .to.equal('辅助')
   })
 
+  it('should render correct contents when use alias', function () {
+    vm = createPicker({
+      data: [[{ id: 1, name: 'A' }, { id: 2, name: 'B' }, { id: 3, name: 'C' }]],
+      alias: {
+        value: 'id',
+        text: 'name'
+      }
+    })
+
+    const wheels = vm.$el.querySelectorAll('.cube-picker-wheel-wrapper > div')
+    const firstWheelItems = wheels[0].querySelectorAll('li')
+    expect(firstWheelItems.length)
+      .to.equal(3)
+    expect(firstWheelItems[1].textContent.trim())
+      .to.equal('B')
+  })
+
+  it('should toggle by change v-model visible', function (done) {
+    this.timeout(1000)
+
+    const toggleHandler = sinon.spy()
+    vm = instantiateComponent(Vue, Picker, {
+      props: {
+        visible: true
+      },
+      on: {
+        toggle: toggleHandler
+      }
+    })
+
+    vm.$parent.updateRenderData({
+      props: {
+        visible: false
+      },
+      on: {
+        toggle: toggleHandler
+      }
+    })
+    vm.$parent.$forceUpdate()
+
+    setTimeout(() => {
+      expect(toggleHandler).to.be.callCount(2)
+
+      done()
+    }, 50)
+  })
+
   it('should trigger events', function () {
     this.timeout(10000)
 
@@ -106,23 +162,27 @@ describe('Picker', () => {
     return new Promise((resolve) => {
       setTimeout(() => {
         vm.$parent.updateRenderData({
-          props: props,
+          props: {
+            title: '两列选择器',
+            data: [data1, data2],
+            cancelTxt: '关闭',
+            confirmTxt: '好的'
+          },
           on: events
         })
         vm.$parent.$forceUpdate()
-        vm.refresh()
       }, 30)
       setTimeout(() => {
         vm.show()
         setTimeout(() => {
-          const cancelBtn = vm.$el.querySelector('.cube-picker-choose [data-action="cancel"]')
+          const cancelBtn = vm.$el.querySelector('.cube-picker-cancel')
           cancelBtn.click()
           expect(cancelHandle)
             .to.be.callCount(1)
 
           vm.show()
           setTimeout(() => {
-            const confirmBtn = vm.$el.querySelector('.cube-picker-choose [data-action="confirm"]')
+            const confirmBtn = vm.$el.querySelector('.cube-picker-confirm')
             confirmBtn.click()
             expect(selectHandle)
               .to.be.callCount(1)
@@ -153,6 +213,53 @@ describe('Picker', () => {
         expect(vm.pickerSelectedVal[0]).to.equal(data2[2].value)
         done()
       })
+    }, 150)
+  })
+
+  it('should add warn log when single is true', () => {
+    const app = new Vue()
+    const originWarn = console.warn
+    const msgs = []
+    console.warn = function (...args) {
+      msgs.push(args.join('#'))
+    }
+    vm = app.$createPicker({
+      title: '变化选择器',
+      data: [data1],
+      selectedIndex: [1]
+    }, true)
+    expect(msgs.length)
+      .to.equal(1)
+    console.warn = originWarn
+  })
+
+  it('setData when picker is invisible', function (done) {
+    this.timeout(10000)
+    vm = createPicker()
+    vm.setData([data1], [1])
+    vm.show()
+    setTimeout(() => {
+      vm.confirm()
+      expect(vm.pickerSelectedIndex[0]).to.equal(1)
+      expect(vm.pickerSelectedVal[0]).to.equal(data1[1].value)
+      done()
+    }, 150)
+  })
+
+  it('setData when picker is visible', function (done) {
+    this.timeout(10000)
+    vm = createPicker({
+      data: [data1]
+    })
+    vm.show()
+    setTimeout(() => {
+      vm.setData([data2], [2])
+      setTimeout(() => {
+        vm.confirm()
+        expect(vm.pickerSelectedIndex[0]).to.equal(2)
+        expect(vm.pickerSelectedVal[0]).to.equal(data2[2].value)
+        done()
+      }, 150)
     }, 150)
   })
 
