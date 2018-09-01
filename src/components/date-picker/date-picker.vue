@@ -2,13 +2,14 @@
   <cube-cascade-picker
     v-model="isVisible"
     :data="data"
-    :selectedIndex="selectedIndex"
+    :selected-index="selectedIndex"
     :title="title"
     :subtitle="subtitle"
     :cancel-txt="cancelTxt"
     :confirm-txt="confirmTxt"
     :swipe-time="swipeTime"
     :z-index="zIndex"
+    :mask-closable="maskClosable"
     @select="_select"
     @cancel="_cancel"
     @change="_change">
@@ -153,7 +154,7 @@
             return this.valueArray[i] && item.value === this.valueArray[i]
           })
           selectedIndex[i] = index !== -1 ? index : 0
-          data = data[selectedIndex[i]].children
+          data = data[selectedIndex[i]] && data[selectedIndex[i]].children
         }
 
         return selectedIndex
@@ -188,7 +189,7 @@
         }
         if (count < this.columnCount - 1 && i < 5) {
           (item.children || item).forEach(subItem => {
-            !subItem.children && this._generateData(i + 1, count + 1, subItem)
+            (!subItem.children || subItem.isMin || subItem.isMax) && this._generateData(i + 1, count + 1, subItem)
           })
         }
       },

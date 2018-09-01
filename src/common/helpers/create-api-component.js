@@ -78,17 +78,12 @@ export default function createAPIComponent(Vue, Component, events = [], single =
     create(config, renderFn, single) {
       const ownerInstance = this
       const isInVueInstance = !!ownerInstance.$on
-      const renderData = parseRenderData(config, events)
-
-      cancelWatchProps()
-      processProps()
-      processEvents()
-      process$()
 
       if (typeof renderFn !== 'function' && single === undefined) {
         single = renderFn
         renderFn = null
       }
+
       // to get Vue options
       // store router i18n ...
       const options = {
@@ -96,20 +91,41 @@ export default function createAPIComponent(Vue, Component, events = [], single =
       }
       if (isInVueInstance) {
         options.parent = ownerInstance
+        if (!ownerInstance.__createAPI_watchers) {
+          ownerInstance.__createAPI_watchers = []
+        }
       }
 
-      const component = api.open(renderData, renderFn, options)
-      if (component.__cube__parent !== ownerInstance) {
-        component.__cube__parent = ownerInstance
-        const beforeDestroy = function () {
-          cancelWatchProps()
-          if (component.__cube__parent === ownerInstance) {
-            component.remove()
-          }
-          ownerInstance.$off('hook:beforeDestroy', beforeDestroy)
-          component.__cube__parent = null
+      const renderData = parseRenderData(config, events)
+
+      processProps()
+      processEvents()
+      process$()
+
+      const eventBeforeDestroy = 'hook:beforeDestroy'
+
+      let component = api.open(renderData, renderFn, options)
+      let oldOwnerInstance = component.__cube__parent
+      if (oldOwnerInstance !== ownerInstance) {
+        if (oldOwnerInstance && oldOwnerInstance.$on) {
+          cancelWatchProps(oldOwnerInstance)
+          oldOwnerInstance.$off(eventBeforeDestroy, oldOwnerInstance.__cube_destroy_handler)
+          oldOwnerInstance.__cube_destroy_handler = null
         }
-        isInVueInstance && ownerInstance.$on('hook:beforeDestroy', beforeDestroy)
+        oldOwnerInstance = component.__cube__parent = ownerInstance
+        const beforeDestroy = function () {
+          cancelWatchProps(ownerInstance)
+          if (oldOwnerInstance === ownerInstance) {
+            component.remove()
+            oldOwnerInstance = component.__cube__parent = null
+            component = null
+          }
+          ownerInstance.$off(eventBeforeDestroy, beforeDestroy)
+        }
+        if (isInVueInstance) {
+          ownerInstance.__cube_destroy_handler = beforeDestroy
+          ownerInstance.$on(eventBeforeDestroy, beforeDestroy)
+        }
       }
       return component
 
@@ -132,7 +148,7 @@ export default function createAPIComponent(Vue, Component, events = [], single =
             }
           })
           if (isInVueInstance) {
-            ownerInstance.__createAPI_watcher = ownerInstance.$watch(function () {
+            const cancelWatcher = ownerInstance.$watch(function () {
               const props = {}
               watchKeys.forEach((key, i) => {
                 props[key] = ownerInstance[watchPropKeys[i]]
@@ -141,6 +157,7 @@ export default function createAPIComponent(Vue, Component, events = [], single =
             }, function (newProps) {
               component && component.$updateProps(newProps)
             })
+            ownerInstance.__createAPI_watchers.push(cancelWatcher)
           }
         }
       }
@@ -170,10 +187,12 @@ export default function createAPIComponent(Vue, Component, events = [], single =
         })
       }
 
-      function cancelWatchProps() {
-        if (ownerInstance.__createAPI_watcher) {
-          ownerInstance.__createAPI_watcher()
-          ownerInstance.__createAPI_watcher = null
+      function cancelWatchProps(ownerInstance) {
+        if (ownerInstance.__createAPI_watchers) {
+          ownerInstance.__createAPI_watchers.forEach((watcher) => {
+            watcher()
+          })
+          ownerInstance.__createAPI_watchers = null
         }
       }
     }
